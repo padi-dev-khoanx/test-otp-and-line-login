@@ -14,7 +14,7 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone_number' => ['required', 'numeric', 'unique:users'],
+            'phone_number' => ['required', 'numeric'],
         ]);
         /* Get credentials from .env */
         $token = getenv("TWILIO_AUTH_TOKEN");
@@ -24,10 +24,13 @@ class AuthController extends Controller
         $twilio->verify->v2->services($twilio_verify_sid)
             ->verifications
             ->create($data['phone_number'], "sms");
-        User::create([
-            'name' => $data['name'],
-            'phone_number' => $data['phone_number'],
-        ]);
+        $haveUser = User::where('phone_number', $data['phone_number'])->first();
+        if(empty($haveUser)) {
+            User::create([
+                'name' => $data['name'],
+                'phone_number' => $data['phone_number'],
+            ]);
+        }
         return redirect()->route('verify')->with(['phone_number' => $data['phone_number']]);
     }
 
